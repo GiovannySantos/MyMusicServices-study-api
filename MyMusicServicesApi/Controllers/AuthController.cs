@@ -3,6 +3,7 @@ using MyMusicServicesApi.Models;
 using MyMusicServicesApi.Services;
 using MyMusicServicesApi.Data;
 using Microsoft.EntityFrameworkCore;
+using MyMusicServicesApi.Dtos;
 
 namespace MyMusicServicesApi.Controllers;
 
@@ -26,7 +27,7 @@ public class AuthController : ControllerBase
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
 
-        if (user == null || user.PasswordHash != request.Password)
+        if (user == null || !_hasher.VerifyPassword(request.Password, user.PasswordHash))
             return Unauthorized("Usuário ou senha inválidos.");
 
         var token = authService.GenerateToken(user);
@@ -34,13 +35,18 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] User user)
+    public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
     {
-        if (await _context.Users.AnyAsync(u => u.Username == user.Username))
+        if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
             return BadRequest("Username já existente.");
 
-        user.PasswordHash = _hasher.HashPassword(user.PasswordHash);
-
+        var user = new User
+        {
+            Username = dto.Username,
+            PasswordHash = _hasher.HashPassword(dto.Password),
+            Email = dto.Email
+        };
+        
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
