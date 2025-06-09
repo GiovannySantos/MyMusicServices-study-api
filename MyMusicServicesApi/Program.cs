@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using MyMusicServicesApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://0.0.0.0:5177");
 
-//planejar uma estratégia melhor para armazenar a chave secreta, como usar variáveis de ambiente ou um serviço de gerenciamento de segredos
+//add services to the container.
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<JwtTokenService>();
 
 builder.Services.AddSingleton(builder.Configuration.GetSection("Jwt").GetValue<string>("Key"));
 
