@@ -5,14 +5,14 @@ using MyMusicServicesApi.Data;
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5177");
 
+//planejar uma estratégia melhor para armazenar a chave secreta, como usar variáveis de ambiente ou um serviço de gerenciamento de segredos
+builder.Services.AddScoped<AuthService>();
 
-var jwtSecretKey = "BBEC7C28-3E26-4E36-9BA9-DB1E8F5D3971";
-builder.Services.AddSingleton(new JwtTokenService(jwtSecretKey));
+builder.Services.AddSingleton(builder.Configuration.GetSection("Jwt").GetValue<string>("Key"));
 
 builder.Services.AddSingleton<PasswordHasher>();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=users.db"));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=users.db"));
 
 // Add services to the container.
 builder.Services.AddControllers();

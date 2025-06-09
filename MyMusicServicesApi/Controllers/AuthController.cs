@@ -22,18 +22,14 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] User loginUser)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] AuthService authService)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginUser.Username);
-        if (user == null)
-            return Unauthorized("Usuário não encontrado.");
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
 
-        var hashedPassword = _hasher.HashPassword(loginUser.PasswordHash);
-        if (user.PasswordHash != hashedPassword)
-            return Unauthorized("Senha inválida.");
+        if (user == null || user.PasswordHash != request.Password)
+            return Unauthorized("Usuário ou senha inválidos.");
 
-        var token = _jwtService.GenerateToken(user);
-
+        var token = authService.GenerateToken(user);
         return Ok(new { token });
     }
 
@@ -41,14 +37,20 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] User user)
     {
         if (await _context.Users.AnyAsync(u => u.Username == user.Username))
-            return BadRequest("Usuário já existe.");
+            return BadRequest("Username já existente.");
 
-        // Aqui você pode fazer hash da senha, mas para testar agora, salve simples
-        user.PasswordHash = user.PasswordHash; // Troque depois pelo hash!
+        user.PasswordHash = _hasher.HashPassword(user.PasswordHash);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
         return Ok("Usuário criado com sucesso.");
+    }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> ObterUsarios()
+    {
+        var users = await _context.Users.ToListAsync();
+        return Ok(users);
     }
 }
